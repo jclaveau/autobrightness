@@ -21,7 +21,7 @@ except:
     os.system("touch %s" % file_path)
     json.dump(default_config, open(file_path, 'w'))
     config_file = json.load(open(file_path))
-    
+
 maxbr = float(config_file['maxbrightness'])
 minbr = float(config_file['minbrightness'])
 
@@ -31,14 +31,14 @@ def brightness(im_file):
     return stat.rms[0]
 
 def takeSample(tmpimg):
-    os.system("fswebcam -r 356x292 -d /dev/video0 %s" %tmpimg)
+    os.system("fswebcam -p YUYV -r 356x292 -d /dev/video0 %s" %tmpimg)
 
 def takeScreeenSample(tmpimg):
     os.system("scrot %s" %tmpimg)
 
 def error_msg(type, arg):
     if type == 1:
-        print "Error: enter your argument after '%s'" % arg 
+        print "Error: enter your argument after '%s'" % arg
 
     if type == 2:
         print "autobrightness: There is no '%s' OPTION." % arg
@@ -53,30 +53,54 @@ class autoBrightness():
     def __init__(self):
         self.maxbr_ = maxbr
         self.minbr_ = minbr
-                
+
     def run(self, samplerate=config_file['samplerate']):
         self.samplerate = float(samplerate)
         while True:
             self.run_once()
             time.sleep(self.samplerate)
-                        
+
     def run_once(self):
         tmpimg = "/tmp/autobrightness-sample.jpg"
         tmpScreenImg = "/tmp/autobrightness-screen-sample.jpg"
         takeSample(tmpimg)
-        #takeScreeenSample(tmpScreenImg)
-        brightnessLevel = brightness(tmpimg)
-        #ScreenbrightnessLevel = brightness(tmpScreenImg)
-        print brightnessLevel
-        #print ScreenbrightnessLevel
-        #set = (brightnessLevel + 255 - ScreenbrightnessLevel)/2.0/255
-        #new_set = self.minbr_ + (self.maxbr_ - self.minbr_)*set
-        new_set = (brightnessLevel * 100)/120
+        takeScreeenSample(tmpScreenImg)
+        camera_brightness = brightness(tmpimg)
+        screen_brightness = brightness(tmpScreenImg)
+
+        MAX_CAMERA_BRIGHTNESS = 187
+        MIN_CAMERA_BRIGHTNESS = 27
+        normalized_camera_brightness = max(
+            (camera_brightness - MIN_CAMERA_BRIGHTNESS)
+            / (MAX_CAMERA_BRIGHTNESS - MIN_CAMERA_BRIGHTNESS),
+            0
+        )
+
+        MAX_SCREEN_BRIGHTNESS = 255
+        MIN_SCREEN_BRIGHTNESS = 0
+        normalized_screen_brightness = max(
+            (MAX_SCREEN_BRIGHTNESS - screen_brightness)
+            / (MAX_SCREEN_BRIGHTNESS - MIN_SCREEN_BRIGHTNESS),
+            0
+        )
+
+        alpha_screen = 0.015
+        normalized_new_brightness = (
+            (1 - alpha_screen) * normalized_camera_brightness
+            + alpha_screen * normalized_screen_brightness
+        )
+
+        new_brightness = self.minbr_ + (self.maxbr_ - self.minbr_) * normalized_new_brightness
+        print "camera_brightness: %s" % str(camera_brightness)
+        print "screen_brightness: %s" % str(screen_brightness)
+        print "normalized_camera_brightness: %s" % str(normalized_camera_brightness)
+        print "normalized_screen_brightness: %s" % str(normalized_screen_brightness)
+        print "normalized_new_brightness: %s" % str(normalized_new_brightness)
         print "\n"
-        print new_set
-        os.system('xbacklight -set %s' % str(new_set))
+        print "new_brightness: %s" % str(new_brightness)
+        os.system('xbacklight -set %s' % str(new_brightness))
         return True
-                
+
 if __name__ == "__main__":
     run = False
     args = sys.argv
@@ -101,7 +125,7 @@ if __name__ == "__main__":
                     error_msg(3, args[i+1])
                     sys.exit()
 
-            
+
             if args[i] == "-x" or args[i] == "--max":
                 try:
                     float(args[i+1])
@@ -141,7 +165,7 @@ if __name__ == "__main__":
                     error_msg(1, args[i])
                     sys.exit()
                 except ValueError:
-                    error_msg(3, args[i+1]) 
+                    error_msg(3, args[i+1])
                     sys.exit()
                 break
             if args[i] == "-g" or args[i] == "--gui":
