@@ -14,7 +14,7 @@ config_path = os.getenv("HOME")+"/.config/wildguppy/config.json"
 script_dir, script_name = os.path.split(os.path.realpath(__file__))
 
 a = appindicator.Indicator('wildguppy', file_path, appindicator.CATEGORY_APPLICATION_STATUS)
-a.set_status( appindicator.STATUS_ACTIVE )
+a.set_status(appindicator.STATUS_ACTIVE)
 
 m = gtk.Menu()
 startItem = gtk.MenuItem('Start')
@@ -39,8 +39,8 @@ m.append(quitItem)
 eachLevel = gtk.Menu()
 levelItem.set_submenu(eachLevel)
 
-subLevels = {} 
-    
+subLevels = {}
+
 for i in xrange(10):
     subLevel = gtk.MenuItem(str(i*10+10))
     subLevels[subLevel] = i*10+10
@@ -59,31 +59,31 @@ aboutItem.show()
 quitItem.show()
 
 
-program = wildguppy.autoBrightness()
-samplerate = int(wildguppy.config_file['samplerate'])
-maxbr_global = int(wildguppy.config_file['maxbrightness'])
-minbr_global = int(wildguppy.config_file['minbrightness'])
+program = wildguppy.AutoBrightness()
+sample_rate = int(wildguppy.config['sample_rate'])
+maxbr_global = int(wildguppy.config['max_brightness'])
+minbr_global = int(wildguppy.config['min_brightness'])
 
 x = 0
-    
+
 def startProgram(item):
     #sampling starts here
-    global x 
+    global x
     program.maxbr_ = maxbr_global
     program.minbr_ = minbr_global
-    x = gobject.timeout_add((samplerate*1000), program.run_once)
+    x = gobject.timeout_add((sample_rate*1000), program.run_once)
 
 startItem.connect('activate', startProgram)
 
 def stopProgram(item):
     #sampling stops and retrieves new settings
-    global maxbr_global, minbr_global, samplerate
-    config_file = json.load(open(config_path))
-    maxbr_global = int(config_file['maxbrightness'])
-    minbr_global = int(config_file['minbrightness'])
-    samplerate = int(config_file['samplerate'])
+    global maxbr_global, minbr_global, sample_rate
+    config = json.load(open(config_path))
+    maxbr_global = int(config['max_brightness'])
+    minbr_global = int(config['min_brightness'])
+    sample_rate = int(config['sample_rate'])
     gobject.source_remove(x)
-    
+
 stopItem.connect('activate', stopProgram)
 
 
@@ -109,7 +109,7 @@ def luckMaker(item):
     except TypeError:
         program.run_once()
         pass
-    
+
 luckyItem.connect('activate', luckMaker)
 
 def aboutShow(item):
@@ -121,6 +121,5 @@ def brightnessSet(item):
     os.system("xbacklight -set %s" % subLevels[item])
 for x in subLevels:
     x.connect('activate', brightnessSet)
-    
-gtk.main()
 
+gtk.main()

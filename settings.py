@@ -7,9 +7,9 @@ import os
 config_addr = os.getenv("HOME")+'/.config/wildguppy/config.json'
 user_config = json.load(open(config_addr))
 
-samplerate = user_config['samplerate']
-max_brightness = user_config['maxbrightness']
-min_brightness = user_config['minbrightness']
+sample_rate = user_config['sample_rate']
+max_brightness = user_config['max_brightness']
+min_brightness = user_config['min_brightness']
 
 
 class mainWindow(Gtk.Window):
@@ -21,7 +21,7 @@ class mainWindow(Gtk.Window):
 		self.button = Gtk.Button(label="Update")
 		self.button.connect("clicked", self.on_button_clicked)
 		self.entry1 = Gtk.Entry()
-		self.entry1.set_text(samplerate)
+		self.entry1.set_text(sample_rate)
 		self.entry2 = Gtk.Entry()
 		self.entry2.set_text(str(max_brightness))
 		self.entry3 = Gtk.Entry()
@@ -38,7 +38,7 @@ class mainWindow(Gtk.Window):
 		grid.attach_next_to(self.entry3, label3, Gtk.PositionType.RIGHT, 1, 2)
 		grid.attach_next_to(self.button, self.entry3, Gtk.PositionType.BOTTOM, 1, 2)
 		grid.attach_next_to(self.label4, label3, Gtk.PositionType.BOTTOM, 1, 2)
-	
+
 	def on_button_clicked(self, widget):
             try:
                 int(self.entry1.get_text())
@@ -50,13 +50,17 @@ class mainWindow(Gtk.Window):
                 else:
                     self.label4.set_text("Numbers only!")
                 return
-            
+
             if int(self.entry2.get_text()) <= int(self.entry3.get_text()):
                 self.label4.set_text("Max value must be greater than min")
                 return
-                
-            user_config = {'samplerate':str(self.entry1.get_text()), 'maxbrightness':str(self.entry2.get_text()), 'minbrightness':str(self.entry3.get_text())} 	
-	    json.dump(user_config, open(config_addr, 'w'))	
+
+            user_config = {
+				'sample_rate':str(self.entry1.get_text()),
+				'max_brightness':str(self.entry2.get_text()),
+				'min_brightness':str(self.entry3.get_text())
+			}
+	    json.dump(user_config, open(config_addr, 'w'))
 	    self.label4.set_text("Updated!\nRestart the program\nto see changes")
 	    pass
 
