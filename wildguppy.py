@@ -14,8 +14,8 @@ def brightness(im_file):
     stat = ImageStat.Stat(im)
     return stat.rms[0]
 
-def take_camera_sample(camera_sample):
-    os.system('fswebcam -p YUYV -r 356x292 -d /dev/video0 %s' % camera_sample)
+def take_camera_sample(video_device, camera_sample):
+    os.system('fswebcam -p YUYV -r 356x292 -d %s %s' % (video_device, camera_sample))
 
 def take_screen_sample(screen_sample):
     os.system('scrot %s' % screen_sample)
@@ -46,7 +46,7 @@ def set_brightness(new_brightness):
     os.system('xbacklight -set %s' % str(new_brightness))
 
 def measure_camera_brightness():
-    take_camera_sample(CAMERA_SAMPLE)
+    take_camera_sample(str(config['video_device']), CAMERA_SAMPLE)
     return brightness(CAMERA_SAMPLE)
 
 def measure_screen_brightness():
@@ -88,6 +88,7 @@ DEFAULT_CONFIG = {
     'sample_rate':str(DEFAULT_SAMPLE_RATE),
     'max_brightness':"100",
     'min_brightness':"0",
+    'video_device':"/dev/video0",
 }
 
 CAMERA_SAMPLE = '/tmp/autobrightness-camera-sample.jpg'
