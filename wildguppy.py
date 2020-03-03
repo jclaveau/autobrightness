@@ -5,6 +5,7 @@ import math
 import os
 import sys
 import time
+import random
 
 from PIL import Image, ImageStat
 
@@ -15,10 +16,10 @@ def brightness(im_file):
     return stat.rms[0]
 
 def take_camera_sample(video_device, camera_sample):
-    os.system('fswebcam -p YUYV -r 356x292 -d %s %s' % (video_device, camera_sample))
+    os.system('fswebcam -p YUYV -r 356x292 -d %s --no-banner %s' % (video_device, camera_sample))
 
 def take_screen_sample(screen_sample):
-    os.system('scrot %s' % screen_sample)
+    os.system('scrot --overwrite %s' % screen_sample)
 
 def error_msg(error_type, arg):
     if error_type == 1:
@@ -79,7 +80,7 @@ def smooth_value(value):
 
 logging.basicConfig(level=logging.DEBUG)
 
-DEFAULT_SAMPLE_RATE = 1
+DEFAULT_SAMPLE_RATE = 0.1
 HOME_FOLDER = os.getenv("HOME")
 CONFIG_FOLDER = HOME_FOLDER + '/.config/wildguppy/'
 CONFIG_FILE = CONFIG_FOLDER + '/config.json'
@@ -99,7 +100,8 @@ MIN_CAMERA_BRIGHTNESS = 30
 MAX_SCREEN_BRIGHTNESS = 255
 MIN_SCREEN_BRIGHTNESS = 0
 
-ALPHA_SCREEN = 0.005
+# ALPHA_SCREEN = 0.005
+ALPHA_SCREEN = 0.8
 
 BRIGHTNESS_VALUES = []
 BRIGHTNESS_SMOOTHING_LENGTH = 4
@@ -116,6 +118,7 @@ class AutoBrightness(object):
         self.max_brightness = float(config['max_brightness'])
         self.min_brightness = float(config['min_brightness'])
         self.sample_rate = float(config['sample_rate'])
+        self.raw_camera_brightness = measure_camera_brightness()
 
     def run(self):
         while True:
@@ -129,15 +132,16 @@ class AutoBrightness(object):
         )
 
     def compute_new_brightness(self):
-        raw_camera_brightness = measure_camera_brightness()
+        if not random.randint(0, 40):
+            self.raw_camera_brightness = measure_camera_brightness()
         raw_screen_brightness = measure_screen_brightness()
         camera_brightness = normalize_brightness(
-            raw_camera_brightness, min_value=MIN_CAMERA_BRIGHTNESS, max_value=MAX_CAMERA_BRIGHTNESS)
+            self.raw_camera_brightness, min_value=MIN_CAMERA_BRIGHTNESS, max_value=MAX_CAMERA_BRIGHTNESS)
         screen_brightness = normalize_brightness(
             raw_screen_brightness, min_value=MIN_SCREEN_BRIGHTNESS, max_value=MAX_SCREEN_BRIGHTNESS)
         new_brightness = compute_adjusted_brightness(camera_brightness, screen_brightness)
         raw_new_brightness = self.scale_normalized_brightness(new_brightness)
-        logging.debug('raw_camera_brightness: %s', str(raw_camera_brightness))
+        logging.debug('raw_camera_brightness: %s', str(self.raw_camera_brightness))
         logging.debug('raw_screen_brightness: %s', str(raw_screen_brightness))
         logging.debug('camera_brightness: %s', str(camera_brightness))
         logging.debug('screen_brightness: %s', str(screen_brightness))
@@ -148,7 +152,8 @@ class AutoBrightness(object):
     def run_once(self):
         raw_new_brightness = self.compute_new_brightness()
 
-        smoothed_brightness = smooth_value(raw_new_brightness)
+        # smoothed_brightness = smooth_value(raw_new_brightness)
+        smoothed_brightness = raw_new_brightness
         logging.debug('BRIGHTNESS_VALUES: %s', BRIGHTNESS_VALUES)
         logging.debug('smoothed_brightness: %s', smoothed_brightness)
 
